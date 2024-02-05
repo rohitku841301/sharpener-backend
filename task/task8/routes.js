@@ -1,52 +1,54 @@
 const fs = require("fs");
 
-let handler = async(req, res) => {
+let handler = (req, res) => {
   const url = req.url;
   const method = req.method;
 
-  console.log(url);
-
-  if (url === "/" && method === "POST") {
-    const body = [];
-    req.on("data", (chunks) => {
-      body.push(chunks);
-      console.log(chunks);
+  if (url === "/favicon.ico") {
+    res.writeHead(200, { "Content-Type": "image/x-icon" });
+    res.end("hii");
+  } else if (url === "/" && method === "POST") {
+    let body = "";
+    req.on("data", (chunk) => {
+      console.log(chunk);
+      body += chunk;
     });
-
-    req.on("end", async() => {
-      const parsedBody = Buffer.concat(body).toString();
-      const newMessage = parsedBody.split("=")[1];
-      try {
-        await fs.promises.writeFile("text.txt",newMessage)
-        console.log(newMessage);
-      } catch (err) {
-        console.error(err);
+    req.on("end", () => {
+      const parsedBody = body.split("=")[1];
+      console.log(parsedBody);
+      fs.writeFile("text.txt", parsedBody, (err) => {
+        if (err) {
+          console.log(err);
+        } else {
+          console.log("write success");
+          res.writeHead(302, { Location: "/" });
+          res.end();
+        }
+      });
+    });
+  } else if (url === "/") {
+    fs.readFile("text.txt", "utf8", (err, result) => {
+      if (err) {
+        console.log(err);
+      } else {
+        res.write("<html>");
+        res.write("<head>");
+        res.write("<title>FormData</title>");
+        res.write("</head>");
+        res.write("<body>");
+        res.write(`<p>${result}</p>`);
+        res.write(
+          '<form action="/" method="POST"><input type="text" name="message" /><button>send</button></form>'
+        );
+        res.write("</body>");
+        res.write("</html>");
+        res.end();
       }
     });
+  } else {
+    res.end("404");
   }
-
-  if (url === "/") {
-    try {
-      const result = await fs.promises.readFile("text.txt",'utf-8')
-      console.log(result);
-      res.write("<html>");
-      res.write("<head>");
-      res.write("<title>New Message</title>");
-      res.write("</head>");
-      res.write("<body>");
-      res.write(`<p>${result}</p>`);
-      res.write('<form action="/" method="POST">');
-      res.write('<input type="text" name="message" />');
-      res.write('<button type="submit">Send</button>');
-      res.write("</form>");
-      res.write("</body>");
-      res.write("</html>");
-      return res.end();
-    } catch (error) {
-      console.log(error);
-    }
-  }
-};
+}
 
 module.exports = {
   handler,

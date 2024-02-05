@@ -2,49 +2,52 @@ const http = require("http");
 const fs = require("fs");
 
 const server = http.createServer((req, res) => {
-  // console.log(req);
   const url = req.url;
   const method = req.method;
- 
-  if (url === "/" && method === "POST") {
-    const body = [];
-    req.on("data", (chunks) => {
-      body.push(chunks);
-      console.log(chunks);
-    });
 
+  if (url === "/favicon.ico") {
+    res.writeHead(200, { "Content-Type": "image/x-icon" });
+    res.end("hii");
+  } else if (url === "/" && method === "POST") {
+    let body = "";
+    req.on("data", (chunk) => {
+      console.log(chunk);
+      body += chunk;
+    });
     req.on("end", () => {
-      const parsedBody = Buffer.concat(body).toString();
-      const newMessage = parsedBody.split("=")[1];
-      fs.writeFile("text.txt", newMessage, (err) => {
+      const parsedBody = body.split("=")[1];
+      console.log(parsedBody);
+      fs.writeFile("text.txt", parsedBody, (err) => {
         if (err) {
           console.log(err);
+        } else {
+          console.log("write success");
+          res.writeHead(302, { Location: "/" });
+          res.end();
         }
       });
-      console.log(newMessage);
     });
-  }
-
-  if (url === "/") {
-    fs.readFile("text.txt", "utf-8", (err, result) => {
+  } else if (url === "/") {
+    fs.readFile("text.txt", "utf8", (err, result) => {
       if (err) {
         console.log(err);
       } else {
         res.write("<html>");
         res.write("<head>");
-        res.write("<title>New Message</title>");
+        res.write("<title>FormData</title>");
         res.write("</head>");
         res.write("<body>");
         res.write(`<p>${result}</p>`);
-        res.write('<form action="/" method="POST">');
-        res.write('<input type="text" name="message" />');
-        res.write('<button type="submit">Send</button>');
-        res.write("</form>");
+        res.write(
+          '<form action="/" method="POST"><input type="text" name="message" /><button>send</button></form>'
+        );
         res.write("</body>");
         res.write("</html>");
-        return res.end();
+        res.end();
       }
     });
+  } else {
+    res.end("404");
   }
 });
 
