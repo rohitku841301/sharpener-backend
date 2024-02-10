@@ -1,21 +1,7 @@
-const fs = require('fs');
+const db = require("../util/db");
 const path = require('path');
 
-const p = path.join(
-  path.dirname(process.mainModule.filename),
-  'data',
-  'products.json'
-);
 
-const getProductsFromFile = cb => {
-  fs.readFile(p, (err, fileContent) => {
-    if (err) {
-      cb([]);
-    } else {
-      cb(JSON.parse(fileContent));
-    }
-  });
-};
 
 module.exports = class Product {
   constructor(title, imageUrl, description, price) {
@@ -26,23 +12,23 @@ module.exports = class Product {
   }
 
   save() {
-    this.id = Math.random().toString();
-    getProductsFromFile(products => {
-      products.push(this);
-      fs.writeFile(p, JSON.stringify(products), err => {
-        console.log(err);
-      });
-    });
+    this.id=Math.random();
+    return db.execute(
+      'INSERT INTO product(title,imageUrl,Price,description) VALUES (?, ?, ?, ?)',
+      [this.title, this.imageUrl, this.price, this.description]
+    );
   }
 
-  static fetchAll(cb) {
-    getProductsFromFile(cb);
+  static fetchAll() {
+    return db.execute('SELECT * FROM product');
   }
 
-  static findById(id, cb) {
-    getProductsFromFile(products => {
-      const product = products.find(p => p.id === id);
-      cb(product);
-    });
+  static findById(id) {
+    return db.execute('SELECT * FROM product WHERE id=?',[id])
   }
+
+  static findByIdAndDelete(id){
+   return db.execute('DELETE FROM product WHERE id=?',[id]);
+  }
+
 };
