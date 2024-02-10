@@ -13,21 +13,28 @@ exports.postAddProduct = (req, res, next) => {
   const imageUrl = req.body.imageUrl;
   const price = req.body.price;
   const description = req.body.description;
-  const product = new Product(title, imageUrl, description, price);
-  product.save()
-  .then(()=>{
-    res.redirect('/');
+  Product.create({
+    title: title,
+    imageUrl: imageUrl,
+    price: price,
+    description: description
+  })
+  .then((result)=>{
+    res.redirect("/")
   })
   .catch((error)=>{
     console.log(error);
   })
+  
 };
 
 exports.getProducts = (req, res, next) => {
-  Product.fetchAll()
-  .then(([products,productsDetail])=>{
+
+  Product.findAll()
+  .then((product)=>{
+    console.log(product.id);
     res.render('admin/products', {
-      prods: products,
+      prods: product,
       pageTitle: 'Admin Products',
       path: '/admin/products'
     });
@@ -43,18 +50,18 @@ exports.getEditProduct = (req,res,next)=>{
     return res.redirect('/');
   }
   const productId = req.params.productId;
-  Product.findById(productId)
-  .then(([product,productDetail])=>{
-      if(!product){
-        res.redirect("/")
-      }
-      console.log(product[0]);
-      res.render('admin/edit-product', {
-        pageTitle: 'Edit Product',
-        path: '/admin/edit-product',
-        editing:editMode,
-        product:product[0]
-    })
+  Product.findByPk(productId)
+  .then((result)=>{
+    console.log(result);
+    if(!result){
+      res.redirect("/")
+    }
+    res.render('admin/edit-product', {
+      pageTitle: 'Edit Product',
+      path: '/admin/edit-product',
+      editing:editMode,
+      product:result
+  })
   })
   .catch((error)=>{
     console.log(error);
@@ -68,11 +75,18 @@ exports.getDeleteProduct = (req,res,next)=>{
   }
   const productId = req.params.productId;
   console.log(productId);
-  Product.findByIdAndDelete(productId)
-  .then(()=>{
+  Product.destroy({
+    where: {
+      id: productId
+    }
+  })
+  .then((result)=>{
+    console.log(result);
+    console.log("deleted");
     res.redirect("/")
   })
   .catch((error)=>{
     console.log(error);
   })
+ 
 }
